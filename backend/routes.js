@@ -41,9 +41,9 @@ router.post('/analyze', authMiddleware, async (req, res) => {
       let errorSent = false;
 
       pythonProcess.on('error', (err) => {
-        if (err.code === 'ENOENT' && cmd === 'python') {
-          console.log("python command not found, falling back to python3...");
-          runAgent('python3');
+        if (err.code === 'ENOENT' && cmd === 'python3') {
+          console.log("python3 command not found, falling back to python...");
+          runAgent('python');
         } else {
           console.error(`Failed to start Python process (${cmd}):`, err);
           if (!res.headersSent && !errorSent) {
@@ -127,7 +127,7 @@ router.post('/analyze', authMiddleware, async (req, res) => {
       });
     };
 
-    runAgent('python');
+    runAgent('python3');
 
   } catch (error) {
     console.error('Endpoint /api/analyze error:', error);

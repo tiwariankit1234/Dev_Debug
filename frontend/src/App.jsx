@@ -160,7 +160,10 @@ function App() {
       }
 
       if (!response.ok) {
-        throw new Error(result.error || result.details || 'Analysis failed.');
+        const errorMsg = result.error && result.details
+          ? `${result.error}\n\nDetails:\n${result.details}`
+          : (result.error || result.details || 'Analysis failed.');
+        throw new Error(errorMsg);
       }
 
       setCurrentReport(result);
