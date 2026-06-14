@@ -1,0 +1,8 @@
+# DevDebug Agent Python Requirements
+# -----------------------------------
+# The analyze.py agent script is designed using Python 3 built-in libraries
+# (urllib, subprocess, ast, json, etc.) to guarantee zero-dependency operation.
+#
+# No external packages are strictly required.
+# If you prefer to use requests instead of urllib, you can install:
+# requests==2.31.0
