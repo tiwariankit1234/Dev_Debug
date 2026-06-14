@@ -32,76 +32,108 @@ router.post('/analyze', authMiddleware, async (req, res) => {
     });
 
     console.log(`Spawning Python Agent: ${pythonScriptPath}`);
-    // Start python subprocess
-    const pythonProcess = spawn('python', [pythonScriptPath]);
 
-    let stdoutData = '';
-    let stderrData = '';
+    const runAgent = (cmd) => {
+      const pythonProcess = spawn(cmd, [pythonScriptPath]);
 
-    // Write input payload to python script stdin
-    pythonProcess.stdin.write(inputPayload);
-    pythonProcess.stdin.end();
+      let stdoutData = '';
+      let stderrData = '';
+      let errorSent = false;
 
-    pythonProcess.stdout.on('data', (data) => {
-      stdoutData += data.toString();
-    });
+      pythonProcess.on('error', (err) => {
+        if (err.code === 'ENOENT' && cmd === 'python') {
+          console.log("python command not found, falling back to python3...");
+          runAgent('python3');
+        } else {
+          console.error(`Failed to start Python process (${cmd}):`, err);
+          if (!res.headersSent && !errorSent) {
+            errorSent = true;
+            res.status(500).json({
+              error: `Failed to start the analysis agent using command '${cmd}'. Make sure Python is installed and in the system PATH.`,
+              details: err.message
+            });
+          }
+        }
+      });
 
-    pythonProcess.stderr.on('data', (data) => {
-      stderrData += data.toString();
-    });
-
-    pythonProcess.on('close', async (code) => {
-      console.log(`Exit code: ${code}`);
-      console.log(`stdout: "${stdoutData}"`);
-      console.log(`stderr: "${stderrData}"`);
-
-      if (code !== 0) {
-        console.error(`Python stderr: ${stderrData}`);
-        return res.status(500).json({
-          error: 'Analysis Agent Subprocess failed.',
-          details: stderrData
-        });
-      }
+      // Handle stdin errors to prevent crashing on closed sockets
+      pythonProcess.stdin.on('error', (err) => {
+        console.error('Stdin error on python process:', err);
+      });
 
       try {
-        console.log("this is stdoutData", stdoutData);
+        pythonProcess.stdin.write(inputPayload);
+        pythonProcess.stdin.end();
+      } catch (writeErr) {
+        console.error('Failed to write to stdin:', writeErr);
+      }
 
-        const result = JSON.parse(stdoutData);
+      pythonProcess.stdout.on('data', (data) => {
+        stdoutData += data.toString();
+      });
 
-        if (!result.success) {
+      pythonProcess.stderr.on('data', (data) => {
+        stderrData += data.toString();
+      });
+
+      pythonProcess.on('close', async (code) => {
+        if (errorSent || res.headersSent) return;
+
+        console.log(`Exit code from ${cmd}: ${code}`);
+        console.log(`stdout: "${stdoutData}"`);
+        console.log(`stderr: "${stderrData}"`);
+
+        if (code !== 0) {
+          console.error(`Python stderr: ${stderrData}`);
           return res.status(500).json({
-            error: 'AI analysis failed.',
-            details: result.error || 'Unknown error'
+            error: 'Analysis Agent Subprocess failed.',
+            details: stderrData
           });
         }
 
-        // Save report to database
-        const newReport = new Report({
-          userId: req.userId,
-          code,
-          language: result.language,
-          input: input || '',
-          sandbox: result.sandbox,
-          staticAnalysis: result.staticAnalysis,
-          aiReport: result.aiReport
-        });
+        try {
+          console.log("this is stdoutData", stdoutData);
+          const result = JSON.parse(stdoutData);
 
-        await newReport.save();
-        res.json(newReport);
+          if (!result.success) {
+            return res.status(500).json({
+              error: 'AI analysis failed.',
+              details: result.error || 'Unknown error'
+            });
+          }
 
-      } catch (jsonErr) {
-        console.error('Failed to parse Python JSON output:', jsonErr);
-        console.error('Raw stdout:', stdoutData);
-        res.status(500).json({
-          error: 'Invalid response from analysis agent.',
-          details: stdoutData
-        });
-      }
-    });
+          // Save report to database
+          const newReport = new Report({
+            userId: req.userId,
+            code,
+            language: result.language,
+            input: input || '',
+            sandbox: result.sandbox,
+            staticAnalysis: result.staticAnalysis,
+            aiReport: result.aiReport
+          });
+
+          await newReport.save();
+          res.json(newReport);
+
+        } catch (jsonErr) {
+          console.error('Failed to parse Python JSON output:', jsonErr);
+          console.error('Raw stdout:', stdoutData);
+          res.status(500).json({
+            error: 'Invalid response from analysis agent.',
+            details: stdoutData
+          });
+        }
+      });
+    };
+
+    runAgent('python');
 
   } catch (error) {
     console.error('Endpoint /api/analyze error:', error);
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 

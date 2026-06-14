@@ -150,7 +150,14 @@ function App() {
         })
       });
 
-      const result = await response.json();
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (Status ${response.status}): ${text.substring(0, 150)}`);
+      }
 
       if (!response.ok) {
         throw new Error(result.error || result.details || 'Analysis failed.');
@@ -263,7 +270,15 @@ function App() {
         })
       });
 
-      const result = await response.json();
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (Status ${response.status}): ${text.substring(0, 150)}`);
+      }
+
       if (!response.ok) {
         throw new Error(result.error || 'Translation failed.');
       }
