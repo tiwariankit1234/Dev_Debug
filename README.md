@@ -153,29 +153,84 @@ python test_sandbox.py
 
 DevDebug Agent is configured to support a **unified production build**, where the Express backend serves the optimized React frontend.
 
-### Step 1: Build the Frontend
-Compile the React production bundle inside the `frontend` directory:
+### 📦 Frontend Production Build
+Before deploying, compile the React production bundle inside the `frontend` directory:
 ```bash
 cd frontend
 npm run build
 ```
-This command compiles and bundles the frontend files into the `frontend/dist` directory.
+This compiles and bundles the static frontend files into `frontend/dist`.
 
-### Step 2: Set Environment Variables
-In your hosting provider environment settings (e.g., Render, Heroku, AWS, or DigitalOcean), configure the following key-value pairs:
-*   `NODE_ENV=production`
-*   `PORT=5000` (or any custom port supported by your host)
-*   `MONGO_URI` (a production-ready MongoDB connection string, such as MongoDB Atlas)
-*   `JWT_SECRET` (a strong, unique cryptographic key for signing JWT user sessions)
-*   `GEMINI_API_KEY` (your Google Gemini API Key)
+---
 
-### Step 3: Run the Server
-Start the backend Node.js server to run the application in production mode:
+### ☁️ Microsoft Azure Virtual Machine Deployment
+
+You can host the application on a **Microsoft Azure Virtual Machine (VM)** (e.g., Ubuntu Server). Here is the recommended configuration workflow:
+
+#### 1. Configure Inbound Port Rules (Azure NSG)
+In your Azure Portal, select your VM's **Network Security Group (NSG)** (e.g., `DevDebug-Server-nsg`) and add an **Inbound Security Rule** to allow traffic:
+*   **Source**: `Any`
+*   **Source port ranges**: `*`
+*   **Destination**: `Any`
+*   **Destination port ranges**: `5000` (or `80` / `443` if setting up a reverse proxy)
+*   **Protocol**: `TCP`
+*   **Action**: `Allow`
+*   **Priority**: `1000` (or next available)
+*   **Name**: `Allow_DevDebug_Backend`
+
+#### 2. Install Server Dependencies
+SSH into your Azure VM and set up Node.js, Python 3, and a process manager:
 ```bash
-cd backend
-npm start
+# Update system repositories
+sudo apt update && sudo apt upgrade -y
+
+# Install Node.js (v18+)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install Python 3 (required for the sandbox execution agent)
+sudo apt-get install -y python3 python3-pip
+
+# Install PM2 globally to manage and persist the server process
+sudo npm install -g pm2
 ```
-The Express server will automatically serve the static frontend assets from the built `dist` folder for any client-side routes, and listen for REST API calls on the configured `/api` routes.
+
+#### 3. Clone Repository & Setup Environments
+Clone the codebase onto the VM and configure the environment variables:
+```bash
+# Clone the repository
+git clone https://github.com/tiwariankit1234/Dev_Debug.git
+cd Dev_Debug
+
+# Install all workspace dependencies
+npm run install:all
+```
+
+Create a `.env` file inside the `backend` directory:
+```env
+PORT=5000
+NODE_ENV=production
+MONGO_URI=mongodb://localhost:27017/devdebug  # Or your remote MongoDB connection string
+JWT_SECRET=your_super_secret_jwt_key
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
+```
+
+#### 4. Compile Assets and Run with PM2
+Build the production frontend and spawn the background Node.js server process:
+```bash
+# Build the React frontend
+npm run build --prefix frontend
+
+# Start the Express server in the background using PM2
+cd backend
+pm2 start server.js --name "devdebug-server"
+
+# Ensure the process restarts automatically on VM reboot
+pm2 startup
+pm2 save
+```
+
+The application will now be running on port `5000` in the background and will restart automatically if the VM restarts. You can access it using your VM's Public IP address (e.g., `http://<YOUR_VM_PUBLIC_IP>:5000`).
 
 ---
 
