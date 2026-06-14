@@ -28,6 +28,8 @@ function App() {
   const [customInput, setCustomInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileViewTab, setMobileViewTab] = useState('editor');
+  const [targetLanguage, setTargetLanguage] = useState('python');
+  const [isTranslating, setIsTranslating] = useState(false);
   
   // Auth states
   const [token, setToken] = useState(localStorage.getItem('devdebug_token') || '');
@@ -237,6 +239,47 @@ function App() {
     }
   };
 
+  const handleTranslateCode = async () => {
+    if (!token) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (!code.trim()) {
+      alert('Please enter some code to translate.');
+      return;
+    }
+    setIsTranslating(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code,
+          sourceLanguage: language,
+          targetLanguage
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Translation failed.');
+      }
+
+      setCode(result.translatedCode);
+      setLanguage(targetLanguage);
+      if (result.notes) {
+        alert(`Translation completed!\n\nAI Notes:\n${result.notes}`);
+      }
+    } catch (err) {
+      alert(`Error translating code: ${err.message}`);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   // Maps Monaco editor languages
   const getEditorLanguage = (lang) => {
     if (lang === 'cpp') return 'cpp';
@@ -355,11 +398,12 @@ function App() {
               <div className="panel-title">
                 <FileCode size={16} className="text-secondary" /> Code Workspace
               </div>
-              <div className="panel-actions">
+              <div className="panel-actions" style={{ flexWrap: 'wrap', justifyContent: 'flex-end', rowGap: '4px' }}>
                 <select 
                   className="select-input"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
+                  title="Source Language"
                 >
                   <option value="auto">Auto-detect Language</option>
                   <option value="python">Python</option>
@@ -368,6 +412,27 @@ function App() {
                   <option value="cpp">C++</option>
                   <option value="java">Java</option>
                 </select>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 2px' }}>➔</span>
+                <select 
+                  className="select-input"
+                  value={targetLanguage}
+                  onChange={(e) => setTargetLanguage(e.target.value)}
+                  title="Target Language"
+                >
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="c">C</option>
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                </select>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '4px 10px', fontSize: '0.75rem', marginLeft: '4px' }} 
+                  onClick={handleTranslateCode}
+                  disabled={isTranslating}
+                >
+                  {isTranslating ? 'Translating...' : 'Translate'}
+                </button>
               </div>
             </div>
 

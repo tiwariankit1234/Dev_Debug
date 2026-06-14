@@ -395,4 +395,70 @@ router.get('/reports/:id/pdf', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/translate - Translate code
+router.post('/translate', authMiddleware, async (req, res) => {
+  try {
+    const { code, sourceLanguage, targetLanguage } = req.body;
+
+    if (!code || !targetLanguage) {
+      return res.status(400).json({ error: 'Code and target language are required.' });
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey || geminiKey.includes('YOUR_GEMINI_API_KEY_HERE')) {
+      return res.status(400).json({
+        error: 'Gemini API Key not set on the server.'
+      });
+    }
+
+    const prompt = `
+You are an expert software engineer. Translate the following code from ${sourceLanguage || 'auto'} to ${targetLanguage}.
+Make sure to follow the idioms, syntax rules, and best practices of ${targetLanguage}.
+Preserve logic, variable names (where appropriate), structure, and comments.
+
+=== CODE TO TRANSLATE ===
+${code}
+
+=== TASK ===
+Return a JSON object containing the translated code. Do not wrap the response in markdown blocks (such as \`\`\`json). Return raw JSON ONLY.
+JSON Schema:
+{
+  "translatedCode": "the complete translated code here",
+  "notes": "brief explanation of any key translation differences or assumptions (max 2 sentences)"
+}
+`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    const payload = {
+      contents: [{
+        parts: [{ text: prompt }]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API returned status ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const textResponse = data.candidates[0].content.parts[0].text;
+    const result = JSON.parse(textResponse.trim());
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Code translation failed:', error);
+    res.status(500).json({ error: 'Failed to translate code: ' + error.message });
+  }
+});
+
 module.exports = router;
