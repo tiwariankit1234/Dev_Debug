@@ -84,6 +84,12 @@ router.post('/analyze', authMiddleware, async (req, res) => {
         console.log(`stderr: "${stderrData}"`);
 
         if (code !== 0) {
+          // Handle Windows Microsoft Store python3 stub
+          if (cmd === 'python3' && (code === 9009 || stderrData.includes('Python was not found'))) {
+            console.log("python3 alias failed on Windows, falling back to python...");
+            return runAgent('python');
+          }
+          
           console.error(`Python stderr: ${stderrData}`);
           return res.status(500).json({
             error: 'Analysis Agent Subprocess failed.',
