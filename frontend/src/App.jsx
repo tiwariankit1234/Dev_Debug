@@ -12,7 +12,9 @@ import {
   Download, 
   Trash2, 
   History, 
-  Cpu 
+  Cpu,
+  Menu,
+  X
 } from 'lucide-react';
 
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -24,6 +26,8 @@ function App() {
   const [code, setCode] = useState('// Paste or write your code here...\nfunction divide(a, b) {\n  return a / b;\n}');
   const [language, setLanguage] = useState('javascript');
   const [customInput, setCustomInput] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileViewTab, setMobileViewTab] = useState('editor');
   
   // Auth states
   const [token, setToken] = useState(localStorage.getItem('devdebug_token') || '');
@@ -252,11 +256,14 @@ function App() {
   return (
     <div className="app-container">
       {/* SIDEBAR - HISTORY */}
-      <aside className="sidebar">
-        <div className="history-header">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <History size={16} /> Analysis History
           </span>
+          <button className="btn-menu-toggle" style={{ padding: '4px' }} onClick={() => setSidebarOpen(false)} title="Close history menu">
+            <X size={18} />
+          </button>
         </div>
         <ul className="history-list">
           {reportsHistory.length === 0 ? (
@@ -290,10 +297,14 @@ function App() {
           )}
         </ul>
       </aside>
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
       {/* MAIN CONTENT WORKSPACE */}
       <main className="main-content">
         <header className="app-header">
+          <button className="btn-menu-toggle" onClick={() => setSidebarOpen(true)} title="Open history menu">
+            <Menu size={20} />
+          </button>
           <div className="logo-container">
             <Cpu className="logo-icon" size={24} />
             <h1 className="logo-text">DevDebug Agent</h1>
@@ -339,7 +350,7 @@ function App() {
         <div className="dashboard-grid">
           
           {/* PANEL 1: WORKSPACE (Monaco Editor) */}
-          <div className="workspace-panel">
+          <div className={`workspace-panel ${mobileViewTab !== 'editor' ? 'hide-mobile' : ''}`}>
             <div className="panel-header">
               <div className="panel-title">
                 <FileCode size={16} className="text-secondary" /> Code Workspace
@@ -395,7 +406,7 @@ function App() {
           </div>
 
           {/* PANEL 2: REPORTS VIEW */}
-          <div className="report-panel">
+          <div className={`report-panel ${mobileViewTab !== 'report' ? 'hide-mobile' : ''}`}>
             {isLoading && !showAuthModal ? (
               <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -603,6 +614,24 @@ function App() {
             )}
           </div>
 
+        </div>
+        
+        {/* BOTTOM NAVIGATION FOR MOBILE SCREEN TOGGLING */}
+        <div className="mobile-nav-tabs">
+          <button 
+            className={`mobile-nav-btn ${mobileViewTab === 'editor' ? 'active' : ''}`}
+            onClick={() => setMobileViewTab('editor')}
+          >
+            <FileCode size={18} />
+            <span>Workspace</span>
+          </button>
+          <button 
+            className={`mobile-nav-btn ${mobileViewTab === 'report' ? 'active' : ''}`}
+            onClick={() => setMobileViewTab('report')}
+          >
+            <Cpu size={18} />
+            <span>Report</span>
+          </button>
         </div>
       </main>
 

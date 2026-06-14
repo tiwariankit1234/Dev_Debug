@@ -771,3 +771,194 @@ body {
   align-items: center;
   height: 100%;
 }
+
+/* ==============================================
+   MOBILE RESPONSIVENESS (SCREENS <= 768px)
+   ============================================== */
+@media (max-width: 768px) {
+  /* Toggleable Sidebar Drawer */
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 30px rgba(0, 0, 0, 0.5);
+    background-color: var(--bg-secondary);
+  }
+  
+  .sidebar.open {
+    left: 0;
+  }
+  
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* App Header layout on mobile */
+  .app-header {
+    padding: 0 16px;
+    gap: 8px;
+    height: 60px;
+  }
+
+  .logo-text {
+    font-size: 1.05rem;
+  }
+
+  .logo-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .panel-actions {
+    gap: 6px;
+  }
+
+  .user-welcome {
+    display: none !important; /* Hide welcome text to save space */
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+  }
+
+  .btn-primary svg, 
+  .btn-secondary svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Grid Layout (Switching instead of showing both at once) */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr !important;
+    height: calc(100% - 108px) !important; /* Adjust for footer mobile-nav-tabs */
+    overflow: hidden;
+  }
+
+  .workspace-panel.hide-mobile,
+  .report-panel.hide-mobile {
+    display: none !important;
+  }
+
+  .workspace-panel {
+    border-right: none;
+    height: 100%;
+  }
+
+  .report-panel {
+    height: 100%;
+  }
+
+  /* Hide the top panel actions to prevent squishing tab headers */
+  .workspace-panel .panel-header, 
+  .report-panel .panel-header {
+    padding: 0 12px;
+    height: 45px;
+  }
+
+  .tabs-header {
+    padding: 0 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+  }
+
+  .tabs-content {
+    padding: 16px;
+  }
+
+  /* Bottom navigation bar for mobile view toggles */
+  .mobile-nav-tabs {
+    display: flex !important;
+    height: 48px;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--accent-teal);
+    background-color: rgba(14, 165, 233, 0.04);
+  }
+
+  .mobile-nav-btn svg {
+    margin-bottom: -2px;
+  }
+
+  /* Menu toggle button for Header on mobile */
+  .btn-menu-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+
+  .btn-menu-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Hide toggle menu and bottom tabs on desktop by default */
+.btn-menu-toggle {
+  display: none;
+}
+
+.mobile-nav-tabs {
+  display: none;
+}
+
+/* Adjust general layouts for tablet support */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    overflow: hidden;
+  }
+  
+  .sidebar {
+    width: 240px;
+  }
+}
