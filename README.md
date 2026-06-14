@@ -149,6 +149,37 @@ python test_sandbox.py
 
 ---
 
+## 🌐 Deployment
+
+DevDebug Agent is configured to support a **unified production build**, where the Express backend serves the optimized React frontend.
+
+### Step 1: Build the Frontend
+Compile the React production bundle inside the `frontend` directory:
+```bash
+cd frontend
+npm run build
+```
+This command compiles and bundles the frontend files into the `frontend/dist` directory.
+
+### Step 2: Set Environment Variables
+In your hosting provider environment settings (e.g., Render, Heroku, AWS, or DigitalOcean), configure the following key-value pairs:
+*   `NODE_ENV=production`
+*   `PORT=5000` (or any custom port supported by your host)
+*   `MONGO_URI` (a production-ready MongoDB connection string, such as MongoDB Atlas)
+*   `JWT_SECRET` (a strong, unique cryptographic key for signing JWT user sessions)
+*   `GEMINI_API_KEY` (your Google Gemini API Key)
+
+### Step 3: Run the Server
+Start the backend Node.js server to run the application in production mode:
+```bash
+cd backend
+npm start
+```
+The Express server will automatically serve the static frontend assets from the built `dist` folder for any client-side routes, and listen for REST API calls on the configured `/api` routes.
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
