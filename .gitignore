@@ -5,3 +5,6 @@ sandbox_temp/
 .DS_Store
 *.pem
 *.key
+
+brain/
+previous_chats/

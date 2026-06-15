@@ -433,6 +433,34 @@ router.get('/reports/:id/pdf', authMiddleware, async (req, res) => {
   }
 });
 
+const fetchWithRetry = async (url, options, maxRetries = 3, initialDelay = 1000) => {
+  let delay = initialDelay;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        if ([503, 429].includes(response.status) && attempt < maxRetries - 1) {
+          console.warn(`Gemini API returned status ${response.status}. Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+          continue;
+        }
+        const errorText = await response.text();
+        throw new Error(`Gemini API returned status ${response.status}: ${errorText}`);
+      }
+      return response;
+    } catch (error) {
+      if (attempt < maxRetries - 1) {
+        console.warn(`Fetch error occurred. Retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
 // POST /api/translate - Translate code
 router.post('/translate', authMiddleware, async (req, res) => {
   try {
@@ -476,16 +504,11 @@ JSON Schema:
       }
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API returned status ${response.status}: ${errorText}`);
-    }
 
     const data = await response.json();
     const textResponse = data.candidates[0].content.parts[0].text;

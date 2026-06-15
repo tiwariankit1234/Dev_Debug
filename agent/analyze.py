@@ -282,19 +282,32 @@ JSON Schema format:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     
-    try:
-        with urllib.request.urlopen(req) as response:
-            response_data = response.read().decode("utf-8")
-            res_json = json.loads(response_data)
-            
-            # Extract text response from Gemini structure
-            text_response = res_json['candidates'][0]['content']['parts'][0]['text']
-            return json.loads(text_response.strip())
-    except urllib.error.HTTPError as e:
-        error_msg = e.read().decode("utf-8")
-        raise Exception(f"Gemini API HTTP Error {e.code}: {error_msg}")
-    except Exception as e:
-        raise Exception(f"Failed to query Gemini API: {str(e)}")
+    max_retries = 3
+    backoff_delay = 1.0 # starting delay in seconds
+    
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req) as response:
+                response_data = response.read().decode("utf-8")
+                res_json = json.loads(response_data)
+                
+                # Extract text response from Gemini structure
+                text_response = res_json['candidates'][0]['content']['parts'][0]['text']
+                return json.loads(text_response.strip())
+        except urllib.error.HTTPError as e:
+            error_msg = e.read().decode("utf-8")
+            # If server is busy (503) or rate-limited (429), retry with delay
+            if e.code in [503, 429] and attempt < max_retries - 1:
+                time.sleep(backoff_delay)
+                backoff_delay *= 2
+                continue
+            raise Exception(f"Gemini API HTTP Error {e.code}: {error_msg}")
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(backoff_delay)
+                backoff_delay *= 2
+                continue
+            raise Exception(f"Failed to query Gemini API: {str(e)}")
 
 def main():
     try:
