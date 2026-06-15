@@ -494,7 +494,7 @@ JSON Schema:
 }
 `;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiKey}`;
     const payload = {
       contents: [{
         parts: [{ text: prompt }]
