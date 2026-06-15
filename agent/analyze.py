@@ -211,7 +211,7 @@ def compile_and_run(code, language, input_data, sandbox_dir):
     return result
 
 def query_gemini_api(api_key, code, language, static_analysis, run_results):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
+    url = f"https://gemini-proxy.ankittiwari002003.workers.dev/v1beta/models/gemini-3.1-flash-lite:generateContent?key={api_key}"
     
     prompt = f"""
 You are the core intelligence of DevDebug Agent, a state-of-the-art multi-language debugging and code review platform.
