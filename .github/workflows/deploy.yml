@@ -1,0 +1,43 @@
+name: CI/CD Pipeline to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Azure Virtual Machine
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USERNAME }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            echo "Starting Deployment Process..."
+            
+            # Navigate to the project directory
+            cd ~/Dev_Debug
+            
+            # Pull the latest code from the main branch
+            git pull origin main
+            
+            # Update Backend dependencies
+            echo "Installing backend dependencies..."
+            cd backend
+            npm install
+            
+            # Update Frontend dependencies and build
+            echo "Building frontend..."
+            cd ../frontend
+            npm install
+            npm run build
+            
+            # Restart the PM2 process to apply changes
+            echo "Restarting application..."
+            pm2 restart devdebug
+            
+            echo "Deployment Completed Successfully!"
